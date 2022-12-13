@@ -1,0 +1,367 @@
+#include <iostream>
+#include<string>
+#include<new>
+
+using namespace std;
+
+struct container{				//Main structure of the containers
+	string code;
+	string name;
+	int quantity;
+	container *pnext;			//to link to the next element in the stack
+};
+struct name_store{			//structure for storing the names and count of the entered names in container
+	string name1;
+	int counter = 0;
+	name_store *link;
+};
+									//All the used functions in the code
+bool isEmpty();
+void push(string code, string name, int quantity);
+void storetemp();
+void return_original();
+void pop();
+void poptemp();
+void print();
+void remove_for_quantity(int n);
+void remove_all();
+void store_name(string newname);
+void print_name(string checkname);
+char welcome();
+									//All the used global variables and variables of structures in the code
+container *top = NULL;
+container *toptemp = NULL;
+container *namechecker = NULL;
+container *quantity_checker = NULL;
+container *index_keeper = NULL;		//keeps pointing to an assigned element/index in the stack
+name_store *head = NULL;
+const int maxCap = 12;				//to keep the maximum storage capacity to 12
+int count = 0;
+
+bool isEmpty(){						//checks if the stack is empty
+	if(top == NULL){
+		return true;
+	}
+	else{
+		return false;
+	}
+}
+void push(string code, string name, int quantity){		//to push nodes/elements in the stack
+	bool done = false;
+	if(top == NULL){
+		container *temp = new(nothrow) container();
+		temp->code = code;
+		temp->name = name;
+		temp->quantity = quantity;
+		temp->pnext = top;
+		top = temp;
+		return;
+	}
+	namechecker = top;								//namechecker is a global variable that checks names through the stack
+	while(namechecker != NULL){						//to traverse through the stack to find already inserted names
+		if(name == namechecker->name){
+			index_keeper = namechecker;				//here, index_keeper keeps pointing to the element so the it can be used
+													//by storetemp() function.
+			storetemp();
+			container *temp = top;
+			while(temp != namechecker){
+				pop();
+				done = true;
+				temp = temp->pnext;
+			}
+		}
+		namechecker = namechecker->pnext;		//to traverse through the stack till the end
+	}
+	container *temp = new(nothrow) container();
+	temp->code = code;
+	temp->name = name;
+	temp->quantity = quantity;
+	temp->pnext = top;
+	top = temp;
+	if(done){								//checks if elements were taken from original stack to temporary one.
+		return_original();					//if yes, then returns the elements to the original stack in order.
+	}
+}
+void storetemp(){							//to store the elements in a temporary stack for returning them later.
+	container *temp2;
+	container *temp1 = top;
+	while(temp1 != index_keeper){
+	temp2 = new(nothrow) container();
+	temp2->code = temp1->code;
+	temp2->name = temp1->name;
+	temp2->quantity = temp1->quantity;
+	temp2->pnext = toptemp;
+	toptemp = temp2;
+	temp1 = temp1->pnext;
+	}
+}
+void return_original(){					//returns the temporarily stored elements to the original stack
+	container *temp1 = toptemp;
+	while(temp1 != NULL){
+		container *temp = new(nothrow) container();
+		temp->code = temp1->code;
+		temp->name = temp1->name;
+		temp->quantity = temp1->quantity;
+		temp->pnext = top;
+		top = temp;
+		temp1 = temp1->pnext;
+	}
+	while(toptemp != NULL){			//after the use of the temporary stack is exhausted, deletes all temporary elements 
+									//to free up space
+		poptemp();
+	}
+}
+void pop(){							//removes the first element in the stack, pointed by top.
+		container *temp = top;
+		name_store *temp1 = head;
+		top = top->pnext;
+		delete temp;
+}
+void poptemp(){						//removes the first element from temporary stack, pointed by temptop
+		container *temp = toptemp;
+		toptemp = toptemp->pnext;
+		delete temp;
+}
+void print(){						//prints all elements currently available in the stack
+	if(isEmpty()){			//checks if the stack is empty.
+		cout << "The storage is empty!" << endl;
+		cout << endl;
+		return;
+	}
+	container *temp = top;
+	cout << endl;
+	cout << "-------------Printing Contents Of All Containers--------------"<< endl;
+	while(temp != NULL){
+		cout << "code of the container: " << temp->code << "\nname of the container: " << temp->name << endl;
+		cout << endl;
+		temp = temp->pnext;
+	}
+}
+void remove_for_quantity(int n){				//removes all elements from the stack according to the quantity rule
+												//provided by the user.
+	bool done = false;	//keeps track if temporary stack has been used.
+	bool removed = false;	//keeps track if any element has been removed for quantity rule.
+	if(top->quantity < n){ 	//only checks for first element's quantity. 
+		cout << endl;
+		cout << "\nRemoved container: " << "\ncode: " << top->code << "\name: " << top->name
+			 << "\nquantity: " << top->quantity << endl;
+		name_store *temp1 = head; 	
+		while(temp1 != NULL){
+			if(top->name == temp1->name1){		//to keep the count ticking for same names entered or removed.
+				temp1->counter = temp1->counter - 1;
+			}
+			temp1 = temp1->link;
+		}
+		removed = true;				//if any element has been removed by quantity rule
+		pop();						//removes first element in the stack
+		--count;					//to keep the count of the number of elements existing in the stack
+		cout << endl;
+	}
+	quantity_checker = top;
+	while(quantity_checker != NULL){	//traverses the whole stack for quantities below the quantity rule
+		if(quantity_checker->quantity < n){
+			index_keeper = quantity_checker;	//now index_keeper is pointing to a different element
+			storetemp();						//temporarily storing the elements to put them back to the original stack
+												//at the end
+			container *temp = top;
+			while(temp != quantity_checker){	//removes all elements in the stack temporarily upto the element with less quantity
+												//so that the less quantity element can be removed from the stack
+				pop();
+				done = true;
+				temp = temp->pnext;
+			}
+			 
+			name_store *temp1 = head;
+			while(temp1 != NULL){					//to keep the count ticking for same names entered or removed
+				if(temp->name == temp1->name1){	
+					temp1->counter = temp1->counter - 1;	
+				}					
+			temp1 = temp1->link;	
+			}												
+			cout << "\nRemoved container: " << "\ncode: " << temp->code << "\nname: " << temp->name
+			 << "\nquantity: " << temp->quantity << endl; 
+			pop();
+			removed = true;			//keeps track if any element has been removed for quantity rule
+			count = count - 1;		//keeps the count of elements existing in the stack
+			cout << endl;
+			quantity_checker = quantity_checker->pnext;
+		}
+		else{
+			quantity_checker = quantity_checker->pnext;
+		}
+	
+	}
+	if(done){
+		return_original();		//returns the temporarily stored elements to the original stack
+	}
+	if(!removed){				//if nothing was removed due to quantity rule prints the message
+		cout << "Nothing was removed!" << endl;
+		cout << endl;
+	}
+}
+void remove_all(){				//removes all elements from the stack
+	cout << endl;
+	cout << "-------------!Removing All Containers!--------------" << endl;
+	while(top != NULL){			//keeps removing until top of the stack points to NULL
+		cout << "\nRemoved container: " << "\ncode: " << top->code << "\name: " << top->name
+		<< "\nquantity: " << top->quantity << endl; 
+		cout << endl;
+		name_store *temp = head;	
+		while(temp != NULL){		//keeps the count ticking for same names entered or removed
+			if(top->name == temp->name1){
+				temp->counter = temp->counter - 1;
+			}
+			temp = temp->link;
+		}
+		pop();
+		count = count - 1;
+	}
+}
+void store_name(string newname){		//stores the names entered by the user also checks if the name already exists
+	if(head == NULL){					//in the stack, if yes, increases the count, if no, creates memory block to store
+		name_store *temp = new(nothrow) name_store(); //the new name. 
+		temp->name1 = newname;
+		temp->counter = temp->counter + 1;;
+		temp->link = head;
+		head = temp;
+	}
+	else{
+		name_store *temp = head;
+		bool duplicate = false;  		//keeps track if duplicate names has been entered by user
+		while(temp != NULL){
+			if(temp->name1 == newname){
+				temp->counter = temp->counter + 1;
+				duplicate = true;
+			
+			}
+			temp = temp->link;
+		}
+		if(duplicate == false){
+			name_store *temp1 = new(nothrow) name_store();
+			temp1->name1 = newname;
+			temp1->counter = temp1->counter + 1;
+			temp1->link = head;
+			head = temp1;
+		}
+	}
+}
+void print_name(string checkname){		//prints the count of the name requested by user
+	name_store *temp = head;
+	bool exists = false;			//keeps track if the name actually exists in the stack
+	while(temp != NULL){
+		if(temp->name1 == checkname){
+			exists = true;		
+			cout << "Count of this good type is: " << temp->counter << endl;
+			cout << endl;
+		}
+		temp = temp->link;
+	}
+	if(!exists){				//if the name never existed in the stack prints the message
+		cout << "There is no item by this name. Sorry!" << endl;
+		cout << endl;
+	}
+}
+char welcome(){					//starting message to the user, shows menu where the user can choose from.
+	char ch;
+	cout << "Menu: \nPress L to load containers: \nPress P to print code and name of all containers:"
+		 << "\nPress R to remove all containers with specified quantity rule: \nPress A to remove all containers: "
+		 << "\nPress C to count the number of items of a particular goods type: \nPress Q to quit: "<< endl;
+	cout << "Your choice: ";
+	cin >> ch;
+	cin.ignore();
+	return ch;				//returns user's choice to main function
+}
+int main(){
+	string code, name, name_count;	//variables used in the main function
+	int quantity, num = 0, qty_rule;
+	bool done = false;				//keeps track if the user is done using the program.
+	cout << "Welcome!" << "\nPlease Enter your choice!" << endl;
+	do{								//continues until the user asks the program to stop
+		char ch = welcome();
+		switch(ch){
+			case 'L': 	
+			case 'l': 	
+				do{
+					cout << "Please Enter the number of containers to input (maximum storage space is 12): ";
+					cin >> num;
+					cin.ignore();
+					if(num < 0 || num > maxCap ){
+						cout << "You cannot enter a negative value or a value more then the maximum capacity!"<< endl;
+					}
+				}while(num < 0 || num > maxCap);	
+				count = count + num;
+				if(count <= maxCap){
+					for(int i = 0; i < num; i++){
+						cout << "Please Enter the code of container " << i+1 << " : ";
+						getline(cin, code);
+						cout << "Please Enter the name of the container "<< i+1 << " : ";
+						getline(cin, name);
+						store_name(name);
+						do{
+							cout << "Please Enter the quantity of good "<< i+1 << " : ";
+							cin >> quantity;
+							cin.ignore();
+							if(quantity < 0){
+								cout << "You cannot enter a negative value!"<< endl;
+							}
+						}while(quantity < 0);
+						push(code, name, quantity);
+						cout << endl;
+					}
+				}
+				else{
+					cout << "Not enough storage!" << endl;		//prompts if there isn't enough storage left for the input
+					count = count - num;						//to be put in the stack.
+					cout << endl;
+				}
+				break;
+			case 'R':
+			case 'r': 
+				if(isEmpty()){
+					cout << "Storage is Empty!"<< endl;
+					cout << endl;
+				}
+				else{
+					cout <<"Please specify the quantity rule: ";
+					cin >> qty_rule;
+					cin.ignore();
+					remove_for_quantity(qty_rule);
+				}
+				break;
+			case 'A':
+			case 'a': 
+				if(isEmpty()){
+					cout << "Storage is Empty!"<< endl;		//notifies the user if the storage is empty
+					cout << endl;
+				}
+				else{
+					remove_all();	
+				}
+				break;
+			case 'C':
+			case 'c':
+				if(isEmpty()){
+					cout << "Storage is Empty!"<< endl;
+					cout << endl;
+				}
+				else{
+					cout << "Count of which good type do you want to see? : ";
+					getline(cin, name_count);
+					print_name(name_count);
+				}
+				break;
+			case 'p':
+			case 'P':
+				print();
+				break;
+			case 'q':
+			case 'Q': 
+				done = true;		//the user has finished using the program
+				break;
+			default:
+				cout << "Please Enter a valid input!" << endl;	//prompts when user enters wrong input.
+				cout << endl;
+		}
+	}while(!done);		//continues until the user is not done using the program. 
+	return 0;
+}
